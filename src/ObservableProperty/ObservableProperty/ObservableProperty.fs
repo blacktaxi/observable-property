@@ -16,11 +16,11 @@ type IWriteableProperty<'a> =
     abstract Provide : IObserver<'a>
 
 type ObservableProperty<'a>(?initialValue) =
-    let subject = new BehaviorSubject<_>(defaultArg initialValue Unchecked.defaultof<_>)
-    let observable = subject.DistinctUntilChanged()
+    let subject = new Subject<_>()
+    let observable = subject :> IObservable<_>
 
     [<VolatileField>]
-    let mutable currentValue : 'a = Unchecked.defaultof<_>
+    let mutable currentValue : 'a = defaultArg initialValue Unchecked.defaultof<_>
 
     let updateCurrentValue =
         subject.ObserveOn(Scheduler.Immediate).Subscribe(fun x -> currentValue <- x)
@@ -66,9 +66,16 @@ module Operators =
     let inline (<<-) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
 
+[<AutoOpen>]
 module Extensions =
     type IReadableProperty<'a> with
-        member property.ObserveChanges = property.Observe.Skip(1)
+        member property.ObserveChanges = property.Observe.DistinctUntilChanged()
+        member property.Behavior =
+            property.Observe
+                .Multicast(
+                    (fun () -> new BehaviorSubject<_>(property.Value) :> _),
+                    fun x -> x)
+                .DistinctUntilChanged()
 
     type IObservable<'a> with
         member observable.AsProperty () = new ObservablePropertyFromObservable<'a>(observable)

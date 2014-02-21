@@ -8,9 +8,14 @@ open System.Reactive.Linq
 
 open System.Reactive.Properties
 open System.Reactive.Properties.Operators
-open System.Reactive.Properties.Extensions
 
 type Tests () =
+    let record (o : IObservable<_>) =
+        let x = o.Replay()
+        let y = x.ToArray()
+        x.Connect() |> ignore
+        y
+
     [<Fact>]
     let ``a property should correctly return the stored value`` () =
         let p = new ObservableProperty<_>()
@@ -24,8 +29,7 @@ type Tests () =
     [<Fact>]
     let ``property changes should be observed correctly`` () =
         let p = new ObservableProperty<_>()
-        let o = p.ObserveChanges.Replay()
-        o.Connect() |> ignore
+        let vs = record (p :> IReadableProperty<_>).Observe
 
         p <<- 1
         p <<- 2
@@ -33,4 +37,34 @@ type Tests () =
 
         (p :> IDisposable).Dispose()
 
-        Assert.Equal<int[]>([| 1; 2; 3 |], o.ToArray().First())
+        Assert.Equal<int[]>([| 1; 2; 3 |], vs.First())
+
+    [<Fact>]
+    let ``property behavior should yield the current value first`` () =
+        let p = new ObservableProperty<_>()
+        p <<- 5
+
+        let o = record p.Behavior
+
+        p <<- 6
+        (p :> IDisposable).Dispose()
+
+        Assert.Equal<int[]>([| 5; 6 |], o.First())
+
+    [<Fact>]
+    let ``property behavior should only yield value changes`` () =
+        let p = new ObservableProperty<_>()
+        p <<- 5
+
+        let o = record p.Behavior
+
+        p <<- 6
+        p <<- 6
+        p <<- 7
+        p <<- 7
+        p <<- 6
+        (p :> IDisposable).Dispose()
+
+        Assert.Equal<int[]>([| 5; 6; 7; 6 |], o.First())
+
+
