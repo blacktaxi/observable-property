@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.21005.1
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ObservableProperty", "ObservableProperty\ObservableProperty.fsproj", "{36179E31-16B3-4E7F-9DAB-0E9CFE013397}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ObservableProperty.Test", "ObservableProperty.Test\ObservableProperty.Test.fsproj", "{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{36179E31-16B3-4E7F-9DAB-0E9CFE013397}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{36179E31-16B3-4E7F-9DAB-0E9CFE013397}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{36179E31-16B3-4E7F-9DAB-0E9CFE013397}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{36179E31-16B3-4E7F-9DAB-0E9CFE013397}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
