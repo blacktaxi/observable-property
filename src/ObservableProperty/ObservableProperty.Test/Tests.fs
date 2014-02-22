@@ -72,7 +72,7 @@ type Tests () =
         let a = new ObservableProperty<_>()
         let b = new ObservableProperty<_>()
 
-        let binding = a |->> b
+        let binding = (a, id) |->> b
 
         a <<- 5
         Assert.True(!!b = 5)
@@ -90,7 +90,7 @@ type Tests () =
         let a = new ObservableProperty<_>()
         let b = new ObservableProperty<_>()
 
-        let binding = a <<-|->> b
+        let binding = (a, id) <<-|->> (b, id)
 
         a <<- 5
         Assert.True(!!b = 5)

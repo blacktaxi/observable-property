@@ -75,29 +75,33 @@ module ObservableProperty =
                 fun x -> x)
             .DistinctUntilChanged()
 
-    let inline bind (from' : IReadableProperty<_>) (to' : IWriteableProperty<_>) : IDisposable =
-        (behavior from').ObserveOn(Scheduler.Immediate).Subscribe(to'.Provide)
+    let inline bind (from' : IReadableProperty<_>) (mapTo : _ -> _) (to' : IWriteableProperty<_>) : IDisposable =
+        (behavior from')
+            .ObserveOn(Scheduler.Immediate)
+            .Select(mapTo)
+            .Subscribe(to'.Provide)
 
-    let inline sync a b : IDisposable =
+    let inline sync a (mapTo : 'a -> 'b) b (mapFrom : 'b -> 'a) : IDisposable =
         // it just magically works!
-        new CompositeDisposable(bind a b, bind b a) :> _
+        new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
 module Operators =
     let inline (<<-) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
-    let inline (|->>) from' to' = ObservableProperty.bind from' to'
-    let inline (<<-|) to' from' = ObservableProperty.bind from' to'
-    let inline (<<-|->>) a b = ObservableProperty.sync a b
+    let inline (|->>) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
+    let inline (<<-|) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
+    let inline (<<-|->>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
 
 [<AutoOpen>]
 module Extensions =
     type IReadableProperty<'a> with
         member property.ObserveChanges = ObservableProperty.changes property
         member property.Behavior = ObservableProperty.behavior property
-        member property.Bind(target) = ObservableProperty.bind property target
+        member property.Bind(target, selector) = ObservableProperty.bind property selector target
 
     type IReadWriteProperty<'a> with
-        member property.Sync(counterpart) = ObservableProperty.sync property counterpart
+        member property.Sync(counterpart, convert, convertBack) =
+            ObservableProperty.sync property convert counterpart convertBack
 
     type IObservable<'a> with
         member observable.AsProperty () = new ObservablePropertyFromObservable<'a>(observable)
