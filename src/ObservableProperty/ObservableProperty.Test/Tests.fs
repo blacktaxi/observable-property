@@ -102,3 +102,12 @@ type Tests () =
 
         a <<- 7
         Assert.True(!!b = 6)
+
+    [<Fact>]
+    let ``binding an observable to property should work`` () =
+        let a = [1; 2; 3; 4].ToObservable()
+        let b = new ObservableProperty<_>()
+
+        let binding = (a.AsProperty(), id) |->> b
+
+        Assert.True(!!b = 4)
