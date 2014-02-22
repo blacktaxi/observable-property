@@ -67,4 +67,38 @@ type Tests () =
 
         Assert.Equal<int[]>([| 5; 6; 7; 6 |], o.First())
 
+    [<Fact>]
+    let ``one-way binding should work`` () =
+        let a = new ObservableProperty<_>()
+        let b = new ObservableProperty<_>()
 
+        let binding = a |->> b
+
+        a <<- 5
+        Assert.True(!!b = 5)
+
+        a <<- 6
+        Assert.True(!!b = 6)
+
+        binding.Dispose()
+
+        a <<- 7
+        Assert.True(!!b = 6)
+
+    [<Fact>]
+    let ``two-way binding should work`` () =
+        let a = new ObservableProperty<_>()
+        let b = new ObservableProperty<_>()
+
+        let binding = a <<-|->> b
+
+        a <<- 5
+        Assert.True(!!b = 5)
+
+        b <<- 6
+        Assert.True(!!a = 6)
+
+        binding.Dispose()
+
+        a <<- 7
+        Assert.True(!!b = 6)
