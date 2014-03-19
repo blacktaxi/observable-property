@@ -4,6 +4,7 @@ open Xunit
 
 open System
 open System.Reactive
+open System.Reactive.Subjects
 open System.Reactive.Linq
 
 open System.Reactive.Properties
@@ -29,7 +30,7 @@ type Tests () =
     [<Fact>]
     let ``property changes should be observed correctly`` () =
         let p = new ObservableProperty<_>()
-        let vs = record (p :> IReadableProperty<_>).Observe
+        let vs = record (p :> IReadableProperty<_>).WhenValueSet
 
         p <<- 1
         p <<- 2
@@ -90,7 +91,7 @@ type Tests () =
         let a = new ObservableProperty<_>()
         let b = new ObservableProperty<_>()
 
-        let binding = (a, id) <<-|->> (b, id)
+        let binding = (a, id) <<-+->> (b, id)
 
         a <<- 5
         Assert.True(!!b = 5)
@@ -111,3 +112,19 @@ type Tests () =
         let binding = (a.AsProperty(), id) |->> b
 
         Assert.True(!!b = 4)
+
+    [<Fact>]
+    let ``converting IObserver to IWriteableProperty works`` () =
+        let s = new Subject<_>()
+        let o = s.Replay()
+        o.Connect() |> ignore
+
+        let p = (s :> IObserver<_>).AsProperty()
+
+        p <<- 1
+        p <<- 2
+        p <<- 3
+
+        let vals = o.Take(3).ToEnumerable() |> Array.ofSeq
+
+        Assert.True([| 1; 2; 3 |] = vals)

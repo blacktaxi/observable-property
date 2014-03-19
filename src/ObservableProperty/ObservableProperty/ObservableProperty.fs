@@ -8,24 +8,29 @@ open System.Reactive.Subjects
 open System.Reactive.Linq
 
 type IReadableProperty<'a> =
+    /// Current value of the property
     abstract Value : 'a
-    abstract Observe : IObservable<'a>
+    /// An observable that generates a value when this property is being set.
+    abstract WhenValueSet : IObservable<'a>
 
 type IWriteableProperty<'a> =
+    /// Set the current value of the property
     abstract Set : 'a -> unit
-    abstract Provide : IObserver<'a>
+    /// An observer that will set the property's value in OnNext.
+    abstract Sink : IObserver<'a>
 
 [<Interface>]
 type IReadWriteProperty<'a> =
     inherit IReadableProperty<'a>
     inherit IWriteableProperty<'a>
 
-type ObservableProperty<'a>(?initialValue) =
+type ObservableProperty<'a>(initialValue) =
     let subject = new Subject<_>()
     let observable = subject :> IObservable<_>
 
+    // @TODO is this really ok?
     [<VolatileField>]
-    let mutable currentValue : 'a = defaultArg initialValue Unchecked.defaultof<_>
+    let mutable currentValue : 'a = initialValue
 
     let updateCurrentValue =
         subject.ObserveOn(Scheduler.Immediate).Subscribe(fun x -> currentValue <- x)
@@ -38,38 +43,42 @@ type ObservableProperty<'a>(?initialValue) =
             subject.OnCompleted()
             toDispose.Dispose()
 
+    new() = ObservableProperty(Unchecked.defaultof<_>)
+
     interface IReadWriteProperty<'a> with
         member this.Value = currentValue
-        member this.Observe = observable
+        member this.WhenValueSet = observable
 
         member this.Set(x) = subject.OnNext(x)
-        member this.Provide = subject :> _
+        member this.Sink = subject :> _
 
     interface IDisposable with
         member this.Dispose() = dispose true
 
-type ObservablePropertyFromObservable<'a>(source : IObservable<'a>) =
-    let inner = new ObservableProperty<'a>()
+type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue) =
+    let inner = new ObservableProperty<'a>(initialValue)
 
     let subscription =
-        source.ObserveOn(Scheduler.Immediate).Subscribe((inner :> IWriteableProperty<_>).Provide)
+        source.ObserveOn(Scheduler.Immediate).Subscribe((inner :> IWriteableProperty<_>).Sink)
 
     let dispose disposing =
         if disposing then
             subscription.Dispose()
             (inner :> IDisposable).Dispose()
 
+    new(source : IObservable<'a>) = ObservablePropertyFromObservable(source, Unchecked.defaultof<_>)
+
     interface IReadableProperty<'a> with
         member this.Value = (inner :> IReadableProperty<_>).Value
-        member this.Observe = (inner :> IReadableProperty<_>).Observe
+        member this.WhenValueSet = (inner :> IReadableProperty<_>).WhenValueSet
 
     interface IDisposable with
         member this.Dispose() = dispose true
 
 module ObservableProperty =
-    let inline changes (p : IReadableProperty<_>) = p.Observe.DistinctUntilChanged()
+    let inline changes (p : IReadableProperty<_>) = p.WhenValueSet.DistinctUntilChanged()
     let inline behavior (p : IReadableProperty<_>) =
-        p.Observe
+        p.WhenValueSet
             .Multicast(
                 (fun () -> new BehaviorSubject<_>(p.Value) :> _),
                 fun x -> x)
@@ -79,7 +88,7 @@ module ObservableProperty =
         (behavior from')
             .ObserveOn(Scheduler.Immediate)
             .Select(mapTo)
-            .Subscribe(to'.Provide)
+            .Subscribe(to'.Sink)
 
     let inline sync a (mapTo : 'a -> 'b) b (mapFrom : 'b -> 'a) : IDisposable =
         // it just magically works!
@@ -88,9 +97,9 @@ module ObservableProperty =
 module Operators =
     let inline (<<-) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
-    let inline (|->>) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
-    let inline (<<-|) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
-    let inline (<<-|->>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
+    let inline ( |->> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
+    let inline ( <<-| ) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
+    let inline (<<-+->>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
 
 [<AutoOpen>]
 module Extensions =
@@ -104,10 +113,14 @@ module Extensions =
             ObservableProperty.sync property convert counterpart convertBack
 
     type IObservable<'a> with
-        member observable.AsProperty () = new ObservablePropertyFromObservable<'a>(observable)
+        member observable.AsProperty () =
+            new ObservablePropertyFromObservable<'a>(observable)
+
+        member observable.AsProperty (initialValue) =
+            new ObservablePropertyFromObservable<'a>(observable, initialValue)
 
     type IObserver<'a> with
         member observer.AsProperty () =
             { new IWriteableProperty<'a> with
                 member this.Set(x) = observer.OnNext(x)
-                member this.Provide = observer }
+                member this.Sink = observer }
