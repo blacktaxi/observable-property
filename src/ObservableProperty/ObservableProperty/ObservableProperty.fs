@@ -95,11 +95,11 @@ module ObservableProperty =
         new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
 module Operators =
-    let inline (<<-) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
+    let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
-    let inline ( |->> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
-    let inline ( <<-| ) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
-    let inline (<<-+->>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
+    let inline ( @~> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
+    let inline ( <~@ ) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
+    let inline (<~@~>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
 
 [<AutoOpen>]
 module Extensions =

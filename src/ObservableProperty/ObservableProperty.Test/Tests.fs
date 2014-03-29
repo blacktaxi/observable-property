@@ -21,10 +21,10 @@ type Tests () =
     let ``a property should correctly return the stored value`` () =
         let p = new ObservableProperty<_>()
 
-        p <<- 5
+        p <~ 5
         Assert.True(!!p = 5)
 
-        p <<- 6
+        p <~ 6
         Assert.True(!!p = 6)
 
     [<Fact>]
@@ -32,9 +32,9 @@ type Tests () =
         let p = new ObservableProperty<_>()
         let vs = record (p :> IReadableProperty<_>).WhenValueSet
 
-        p <<- 1
-        p <<- 2
-        p <<- 3
+        p <~ 1
+        p <~ 2
+        p <~ 3
 
         (p :> IDisposable).Dispose()
 
@@ -43,11 +43,11 @@ type Tests () =
     [<Fact>]
     let ``property behavior should yield the current value first`` () =
         let p = new ObservableProperty<_>()
-        p <<- 5
+        p <~ 5
 
         let o = record p.Behavior
 
-        p <<- 6
+        p <~ 6
         (p :> IDisposable).Dispose()
 
         Assert.Equal<int[]>([| 5; 6 |], o.First())
@@ -55,15 +55,15 @@ type Tests () =
     [<Fact>]
     let ``property behavior should only yield value changes`` () =
         let p = new ObservableProperty<_>()
-        p <<- 5
+        p <~ 5
 
         let o = record p.Behavior
 
-        p <<- 6
-        p <<- 6
-        p <<- 7
-        p <<- 7
-        p <<- 6
+        p <~ 6
+        p <~ 6
+        p <~ 7
+        p <~ 7
+        p <~ 6
         (p :> IDisposable).Dispose()
 
         Assert.Equal<int[]>([| 5; 6; 7; 6 |], o.First())
@@ -73,17 +73,17 @@ type Tests () =
         let a = new ObservableProperty<_>()
         let b = new ObservableProperty<_>()
 
-        let binding = (a, id) |->> b
+        let binding = (a, id) @~> b
 
-        a <<- 5
+        a <~ 5
         Assert.True(!!b = 5)
 
-        a <<- 6
+        a <~ 6
         Assert.True(!!b = 6)
 
         binding.Dispose()
 
-        a <<- 7
+        a <~ 7
         Assert.True(!!b = 6)
 
     [<Fact>]
@@ -91,17 +91,15 @@ type Tests () =
         let a = new ObservableProperty<_>()
         let b = new ObservableProperty<_>()
 
-        let binding = (a, id) <<-+->> (b, id)
+        do
+            use binding = (a, id) <~@~> (b, id)
 
-        a <<- 5
-        Assert.True(!!b = 5)
+            a <~ 5
+            Assert.True(!!b = 5)
+            b <~ 6
+            Assert.True(!!a = 6)
 
-        b <<- 6
-        Assert.True(!!a = 6)
-
-        binding.Dispose()
-
-        a <<- 7
+        a <~ 7
         Assert.True(!!b = 6)
 
     [<Fact>]
@@ -109,7 +107,7 @@ type Tests () =
         let a = [1; 2; 3; 4].ToObservable()
         let b = new ObservableProperty<_>()
 
-        let binding = (a.AsProperty(), id) |->> b
+        let binding = (a.AsProperty(), id) @~> b
 
         Assert.True(!!b = 4)
 
@@ -121,9 +119,9 @@ type Tests () =
 
         let p = (s :> IObserver<_>).AsProperty()
 
-        p <<- 1
-        p <<- 2
-        p <<- 3
+        p <~ 1
+        p <~ 2
+        p <~ 3
 
         let vals = o.Take(3).ToEnumerable() |> Array.ofSeq
 
