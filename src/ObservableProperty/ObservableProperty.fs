@@ -28,12 +28,12 @@ type ObservableProperty<'a>(initialValue) =
     let subject = new Subject<_>()
     let observable = subject :> IObservable<_>
 
-    // @TODO is this really ok?
-    [<VolatileField>]
+    let gate = obj()
     let mutable currentValue : 'a = initialValue
 
     let updateCurrentValue =
-        subject.ObserveOn(Scheduler.Immediate).Subscribe(fun x -> currentValue <- x)
+        subject.ObserveOn(Scheduler.Immediate).Subscribe(
+            fun x -> lock gate <| fun _ -> currentValue <- x)
 
     let toDispose =
         new CompositeDisposable(subject :> IDisposable, updateCurrentValue)
@@ -46,7 +46,7 @@ type ObservableProperty<'a>(initialValue) =
     new() = ObservableProperty(Unchecked.defaultof<_>)
 
     interface IReadWriteProperty<'a> with
-        member this.Value = currentValue
+        member this.Value = lock gate <| fun _ -> currentValue
         member this.WhenValueSet = observable
 
         member this.Set(x) = subject.OnNext(x)
