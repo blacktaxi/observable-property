@@ -19,7 +19,7 @@ type Tests () =
 
     [<Fact>]
     let ``a property should correctly return the stored value`` () =
-        let p = oref 0
+        let p = newP 0
 
         p <~ 5
         Assert.Equal(5, !!p)
@@ -29,7 +29,7 @@ type Tests () =
 
     [<Fact>]
     let ``property changes should be observed correctly`` () =
-        let p = oref 0
+        let p = newP 0
         let vs = record (p :> IReadableProperty<_>).WhenValueSet
 
         p <~ 1
@@ -42,7 +42,7 @@ type Tests () =
 
     [<Fact>]
     let ``property behavior should yield the current value first`` () =
-        let p = oref 0
+        let p = newP 0
         p <~ 5
 
         let o = record p.Behavior
@@ -54,7 +54,7 @@ type Tests () =
 
     [<Fact>]
     let ``property behavior should only yield value changes`` () =
-        let p = oref 0
+        let p = newP 0
         p <~ 5
 
         let o = record p.Behavior
@@ -70,8 +70,8 @@ type Tests () =
 
     [<Fact>]
     let ``one-way binding should work`` () =
-        let a = oref 0
-        let b = oref 0
+        let a = newP 0
+        let b = newP 0
 
         let binding = (a, id) @~> b
 
@@ -88,8 +88,8 @@ type Tests () =
 
     [<Fact>]
     let ``two-way binding should work`` () =
-        let a = oref 0
-        let b = oref 0
+        let a = newP 0
+        let b = newP 0
 
         do
             use binding = (a, id) <~@~> (b, id)
@@ -105,7 +105,7 @@ type Tests () =
     [<Fact>]
     let ``binding an observable to property should work`` () =
         let a = [1; 2; 3; 4].ToObservable()
-        let b = oref 0
+        let b = newP 0
 
         let binding = (a.AsProperty(0), id) @~> b
 

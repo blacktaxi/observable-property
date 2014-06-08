@@ -91,7 +91,7 @@ module ObservableProperty =
         new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
 module Operators =
-    let inline oref v = new ObservableProperty<_>(v)
+    let inline newP v = new ObservableProperty<_>(v)
     let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
     let inline ( @~> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
@@ -101,7 +101,7 @@ module Operators =
 [<AutoOpen>]
 module Extensions =
     type IReadableProperty<'a> with
-        member property.ObserveChanges = ObservableProperty.changes property
+        member property.WhenValueChanges = ObservableProperty.changes property
         member property.Behavior = ObservableProperty.behavior property
         member property.Bind(target, selector) = ObservableProperty.bind property selector target
 
