@@ -40,9 +40,9 @@ Target "Test" <| fun _ ->
     !! (testDir + "/*.Test.dll")
     |> xUnit (fun p ->
         { p with
-            XmlOutput = true
+            XmlOutput = false
             OutputDir = testDir
-            NUnitXmlOutput = true
+            NUnitXmlOutput = false
             Verbose = true
             ErrorLevel = DontFailBuild })
 
