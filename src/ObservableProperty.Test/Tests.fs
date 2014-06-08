@@ -22,10 +22,10 @@ type Tests () =
         let p = oref 0
 
         p <~ 5
-        Assert.True(!!p = 5)
+        Assert.Equal(5, !!p)
 
         p <~ 6
-        Assert.True(!!p = 6)
+        Assert.Equal(6, !!p)
 
     [<Fact>]
     let ``property changes should be observed correctly`` () =
@@ -76,15 +76,15 @@ type Tests () =
         let binding = (a, id) @~> b
 
         a <~ 5
-        Assert.True(!!b = 5)
+        Assert.Equal(5, !!b)
 
         a <~ 6
-        Assert.True(!!b = 6)
+        Assert.Equal(6, !!b)
 
         binding.Dispose()
 
         a <~ 7
-        Assert.True(!!b = 6)
+        Assert.Equal(6, !!b)
 
     [<Fact>]
     let ``two-way binding should work`` () =
@@ -95,12 +95,12 @@ type Tests () =
             use binding = (a, id) <~@~> (b, id)
 
             a <~ 5
-            Assert.True(!!b = 5)
+            Assert.Equal(5, !!b)
             b <~ 6
-            Assert.True(!!a = 6)
+            Assert.Equal(6, !!a)
 
         a <~ 7
-        Assert.True(!!b = 6)
+        Assert.Equal(6, !!b)
 
     [<Fact>]
     let ``binding an observable to property should work`` () =
@@ -109,7 +109,7 @@ type Tests () =
 
         let binding = (a.AsProperty(0), id) @~> b
 
-        Assert.True(!!b = 4)
+        Assert.Equal(4, !!b)
 
     [<Fact>]
     let ``converting IObserver to IWriteableProperty works`` () =
@@ -125,4 +125,4 @@ type Tests () =
 
         let vals = o.Take(3).ToEnumerable() |> Array.ofSeq
 
-        Assert.True([| 1; 2; 3 |] = vals)
+        Assert.Equal<int[]>([| 1; 2; 3 |], vals)
