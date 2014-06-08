@@ -93,6 +93,7 @@ module ObservableProperty =
         new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
 module Operators =
+    let inline oref v = new ObservableProperty<_>(v)
     let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
     let inline ( @~> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
