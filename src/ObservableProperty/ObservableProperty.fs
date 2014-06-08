@@ -10,7 +10,7 @@ open System.Reactive.Linq
 type IReadableProperty<'a> =
     /// Current value of the property
     abstract Value : 'a
-    /// An observable that generates a value when this property is being set.
+    /// An observable that generates a value when this IReadableProperty<'a> is being set.
     abstract WhenValueSet : IObservable<'a>
 
 type IWriteableProperty<'a> =
