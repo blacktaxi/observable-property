@@ -107,7 +107,7 @@ type Tests () =
         let a = [1; 2; 3; 4].ToObservable()
         let b = oref 0
 
-        let binding = (a.AsProperty(), id) @~> b
+        let binding = (a.AsProperty(0), id) @~> b
 
         Assert.True(!!b = 4)
 

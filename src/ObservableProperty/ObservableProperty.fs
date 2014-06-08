@@ -63,8 +63,6 @@ type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue
             subscription.Dispose()
             (inner :> IDisposable).Dispose()
 
-    new(source : IObservable<'a>) = ObservablePropertyFromObservable(source, Unchecked.defaultof<_>)
-
     interface IReadableProperty<'a> with
         member this.Value = (inner :> IReadableProperty<_>).Value
         member this.WhenValueSet = (inner :> IReadableProperty<_>).WhenValueSet
@@ -111,9 +109,6 @@ module Extensions =
             ObservableProperty.sync property convert counterpart convertBack
 
     type IObservable<'a> with
-        member observable.AsProperty () =
-            new ObservablePropertyFromObservable<'a>(observable)
-
         member observable.AsProperty (initialValue) =
             new ObservablePropertyFromObservable<'a>(observable, initialValue)
 
