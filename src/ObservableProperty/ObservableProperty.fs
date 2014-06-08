@@ -32,7 +32,8 @@ type ObservableProperty<'a>(initialValue) =
     let mutable currentValue : 'a = initialValue
 
     let updateCurrentValue =
-        subject.ObserveOn(Scheduler.Immediate).Subscribe(fun x -> lock gate <| fun _ -> currentValue <- x)
+        subject.ObserveOn(Scheduler.Immediate).Subscribe(
+            fun x -> lock gate <| fun _ -> currentValue <- x)
 
     let toDispose =
         new CompositeDisposable(subject :> IDisposable, updateCurrentValue)
