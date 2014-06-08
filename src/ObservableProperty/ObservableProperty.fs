@@ -7,12 +7,14 @@ open System.Reactive.Disposables
 open System.Reactive.Subjects
 open System.Reactive.Linq
 
+/// A read-only property variable.
 type IReadableProperty<'a> =
     /// Current value of the property
     abstract Value : 'a
     /// An observable that generates a value when this IReadableProperty<'a> is being set.
     abstract WhenValueSet : IObservable<'a>
 
+/// A write-only property variable.
 type IWriteableProperty<'a> =
     /// Set the current value of the property
     abstract Set : 'a -> unit
@@ -91,11 +93,23 @@ module ObservableProperty =
         new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
 module Operators =
+    /// Creates a new ObservableProperty with a given initial value.
     let inline newP v = new ObservableProperty<_>(v)
+
+    /// Assigns a new value to an IWriteableProperty.
     let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
+
+    /// Gets current value of an IReadableProperty.
     let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
+
+    /// 'Binds' an IReadableProperty (left operand) to an IWriteableProperty (right operand),
+    /// projecting the values with given map function.
     let inline ( @~> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
+
+    /// 'Binds' an IReadableProperty (left operand) to an IWriteableProperty (right operand),
+    /// projecting the values with given map function.
     let inline ( <~@ ) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
+
     let inline (<~@~>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
 
 [<AutoOpen>]
@@ -110,10 +124,12 @@ module Extensions =
             ObservableProperty.sync property convert counterpart convertBack
 
     type IObservable<'a> with
+        /// View this observable as an IReadableProperty
         member observable.AsProperty (initialValue) =
             new ObservablePropertyFromObservable<'a>(observable, initialValue)
 
     type IObserver<'a> with
+        /// View this observer as an IWriteableProperty
         member observer.AsProperty () =
             { new IWriteableProperty<'a> with
                 member this.Set(x) = observer.OnNext(x)
