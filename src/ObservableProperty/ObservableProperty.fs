@@ -43,8 +43,6 @@ type ObservableProperty<'a>(initialValue) =
             subject.OnCompleted()
             toDispose.Dispose()
 
-    new() = ObservableProperty(Unchecked.defaultof<_>)
-
     interface IReadWriteProperty<'a> with
         member this.Value = currentValue
         member this.WhenValueSet = observable
