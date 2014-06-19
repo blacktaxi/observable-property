@@ -52,8 +52,9 @@ type ObservableProperty<'a>(initialValue) =
         member this.Set(x) = subject.OnNext(x)
         member this.Sink = subject :> _
 
+    member this.Dispose() = dispose true
     interface IDisposable with
-        member this.Dispose() = dispose true
+        member this.Dispose() = this.Dispose()
 
 type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue) =
     let inner = new ObservableProperty<'a>(initialValue)
@@ -70,8 +71,9 @@ type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue
         member this.Value = (inner :> IReadableProperty<_>).Value
         member this.WhenValueSet = (inner :> IReadableProperty<_>).WhenValueSet
 
+    member this.Dispose() = dispose true
     interface IDisposable with
-        member this.Dispose() = dispose true
+        member this.Dispose() = this.Dispose()
 
 module ObservableProperty =
     let inline changes (p : IReadableProperty<_>) = p.WhenValueSet.DistinctUntilChanged()
