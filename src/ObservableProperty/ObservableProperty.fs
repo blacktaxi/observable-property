@@ -27,18 +27,11 @@ type IReadWriteProperty<'a> =
     inherit IWriteableProperty<'a>
 
 type ObservableProperty<'a>(initialValue) =
-    let subject = new Subject<_>()
-    let observable = subject :> IObservable<_>
+    let subject = new BehaviorSubject<_>(initialValue)
+    // this is not an optimal implementation: see ObservableProperty.behavior
+    let observable = subject.Skip(1) :> IObservable<_>
 
-    let gate = obj()
-    let mutable currentValue : 'a = initialValue
-
-    let updateCurrentValue =
-        subject.ObserveOn(Scheduler.Immediate).Subscribe(
-            fun x -> lock gate <| fun _ -> currentValue <- x)
-
-    let toDispose =
-        new CompositeDisposable(subject :> IDisposable, updateCurrentValue)
+    let toDispose = subject :> IDisposable
 
     let dispose disposing =
         if disposing then
@@ -46,7 +39,7 @@ type ObservableProperty<'a>(initialValue) =
             toDispose.Dispose()
 
     interface IReadWriteProperty<'a> with
-        member this.Value = lock gate <| fun _ -> currentValue
+        member this.Value = subject.Value
         member this.WhenValueSet = observable
 
         member this.Set(x) = subject.OnNext(x)
