@@ -72,9 +72,7 @@ module ObservableProperty =
     let inline changes (p : IReadableProperty<_>) = p.WhenValueSet.DistinctUntilChanged()
     let inline behavior (p : IReadableProperty<_>) =
         p.WhenValueSet
-            .Multicast(
-                (fun () -> new BehaviorSubject<_>(p.Value) :> _),
-                fun x -> x)
+            .StartWith(p.Value)
             .DistinctUntilChanged()
 
     let inline bind (from' : IReadableProperty<_>) (mapTo : _ -> _) (to' : IWriteableProperty<_>) : IDisposable =
