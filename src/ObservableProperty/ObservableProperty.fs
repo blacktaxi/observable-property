@@ -8,23 +8,22 @@ open System.Reactive.Subjects
 open System.Reactive.Linq
 
 /// A read-only property variable.
-type IReadableProperty<'a> =
+type IOutObservableProperty<'a> =
     /// Current value of the property
     abstract Value : 'a
     /// An observable that generates a value when this IReadableProperty<'a> is being set.
     abstract WhenValueSet : IObservable<'a>
 
 /// A write-only property variable.
-type IWriteableProperty<'a> =
+type IInObservableProperty<'a> =
     /// Set the current value of the property
     abstract Set : 'a -> unit
     /// An observer that will set the property's value in OnNext.
     abstract Sink : IObserver<'a>
 
-[<Interface>]
-type IReadWriteProperty<'a> =
-    inherit IReadableProperty<'a>
-    inherit IWriteableProperty<'a>
+type IInOutObservableProperty<'a> =
+    inherit IOutObservableProperty<'a>
+    inherit IInObservableProperty<'a>
 
 type ObservableProperty<'a>(initialValue) =
     let subject = new BehaviorSubject<_>(initialValue)
@@ -38,7 +37,7 @@ type ObservableProperty<'a>(initialValue) =
             subject.OnCompleted()
             toDispose.Dispose()
 
-    interface IReadWriteProperty<'a> with
+    interface IInOutObservableProperty<'a> with
         member this.Value = subject.Value
         member this.WhenValueSet = observable
 
@@ -53,29 +52,29 @@ type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue
     let inner = new ObservableProperty<'a>(initialValue)
 
     let subscription =
-        source.ObserveOn(Scheduler.Immediate).Subscribe((inner :> IWriteableProperty<_>).Sink)
+        source.ObserveOn(Scheduler.Immediate).Subscribe((inner :> IInObservableProperty<_>).Sink)
 
     let dispose disposing =
         if disposing then
             subscription.Dispose()
             (inner :> IDisposable).Dispose()
 
-    interface IReadableProperty<'a> with
-        member this.Value = (inner :> IReadableProperty<_>).Value
-        member this.WhenValueSet = (inner :> IReadableProperty<_>).WhenValueSet
+    interface IOutObservableProperty<'a> with
+        member this.Value = (inner :> IOutObservableProperty<_>).Value
+        member this.WhenValueSet = (inner :> IOutObservableProperty<_>).WhenValueSet
 
     member this.Dispose() = dispose true
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
 module ObservableProperty =
-    let inline changes (p : IReadableProperty<_>) = p.WhenValueSet.DistinctUntilChanged()
-    let inline behavior (p : IReadableProperty<_>) =
+    let inline changes (p : IOutObservableProperty<_>) = p.WhenValueSet.DistinctUntilChanged()
+    let inline behavior (p : IOutObservableProperty<_>) =
         p.WhenValueSet
             .StartWith(p.Value)
             .DistinctUntilChanged()
 
-    let inline bind (from' : IReadableProperty<_>) (mapTo : _ -> _) (to' : IWriteableProperty<_>) : IDisposable =
+    let inline bind (from' : IOutObservableProperty<_>) (mapTo : _ -> _) (to' : IInObservableProperty<_>) : IDisposable =
         (behavior from')
             .ObserveOn(Scheduler.Immediate)
             .Select(mapTo)
@@ -90,10 +89,10 @@ module Operators =
     let inline newOP v = new ObservableProperty<_>(v)
 
     /// Assigns a new value to an IWriteableProperty.
-    let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
+    let inline (<~) (p : IInObservableProperty<'a>) (x : 'a) = p.Set(x)
 
     /// Gets current value of an IReadableProperty.
-    let inline (!!) (p : IReadableProperty<'a>) : 'a = p.Value
+    let inline (!!) (p : IOutObservableProperty<'a>) : 'a = p.Value
 
     /// 'Binds' an IReadableProperty (left operand) to an IWriteableProperty (right operand),
     /// projecting the values with given map function.
@@ -107,12 +106,12 @@ module Operators =
 
 [<AutoOpen>]
 module Extensions =
-    type IReadableProperty<'a> with
+    type IOutObservableProperty<'a> with
         member property.WhenValueChanges = ObservableProperty.changes property
         member property.Behavior = ObservableProperty.behavior property
         member property.Bind(target, selector) = ObservableProperty.bind property selector target
 
-    type IReadWriteProperty<'a> with
+    type IInOutObservableProperty<'a> with
         member property.Sync(counterpart, convert, convertBack) =
             ObservableProperty.sync property convert counterpart convertBack
 
@@ -124,6 +123,6 @@ module Extensions =
     type IObserver<'a> with
         /// View this observer as an IWriteableProperty
         member observer.AsProperty () =
-            { new IWriteableProperty<'a> with
+            { new IInObservableProperty<'a> with
                 member this.Set(x) = observer.OnNext(x)
                 member this.Sink = observer }

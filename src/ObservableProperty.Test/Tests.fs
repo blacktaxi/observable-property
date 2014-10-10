@@ -30,7 +30,7 @@ type Tests () =
     [<Fact>]
     let ``property changes should be observed correctly`` () =
         let p = newOP 0
-        let vs = record (p :> IReadableProperty<_>).WhenValueSet
+        let vs = record (p :> IOutObservableProperty<_>).WhenValueSet
 
         p <~ 1
         p <~ 2
