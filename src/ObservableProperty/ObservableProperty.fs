@@ -87,7 +87,7 @@ module ObservableProperty =
 
 module Operators =
     /// Creates a new ObservableProperty with a given initial value.
-    let inline newP v = new ObservableProperty<_>(v)
+    let inline newOP v = new ObservableProperty<_>(v)
 
     /// Assigns a new value to an IWriteableProperty.
     let inline (<~) (p : IWriteableProperty<'a>) (x : 'a) = p.Set(x)
