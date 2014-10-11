@@ -8,7 +8,7 @@ open Fake.FileUtils
 let inline (---) (x : Fake.FileSystem.FileIncludes) (patterns : string list) =
     List.fold (--) x patterns
 
-let buildDir = "./bld"
+let buildDir = "./bin"
 
 // Target for test assemblies
 let testDir = buildDir + "/test"
