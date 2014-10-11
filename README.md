@@ -9,7 +9,7 @@ An [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)-based data binding wi
 Example
 =======
 
-```
+```fsharp
 open System.Reactive.Property
 open System.Reactive.Property.Operators
 
