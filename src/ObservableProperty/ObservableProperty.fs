@@ -7,6 +7,8 @@ open System.Reactive.Disposables
 open System.Reactive.Subjects
 open System.Reactive.Linq
 
+open System.Runtime.CompilerServices
+
 /// A read-only property variable.
 type IOutObservableProperty<'a> =
     /// Current value of the property
@@ -48,7 +50,7 @@ type ObservableProperty<'a>(initialValue) =
     interface IDisposable with
         member this.Dispose() = this.Dispose()
 
-type ObservablePropertyFromObservable<'a>(source : IObservable<'a>, initialValue) =
+type ObservablePropertyFromObservable<'a> internal (source : IObservable<'a>, initialValue) =
     let inner = new ObservableProperty<'a>(initialValue)
 
     let subscription =
@@ -84,6 +86,20 @@ module ObservableProperty =
         // it just magically works!
         new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
 
+    let ofObservableInit initialValue o : IOutObservableProperty<_> =
+        new ObservablePropertyFromObservable<'a>(o, initialValue) :> _
+
+    let ofObservable (o : IObservable<'a>) : IOutObservableProperty<'a option> =
+        new ObservablePropertyFromObservable<'a option>(o.Select(Some), None) :> _
+
+    let ofObservableOption (o : IObservable<'a option>) : IOutObservableProperty<'a option> =
+        new ObservablePropertyFromObservable<'a option>(o, None) :> _
+
+    let ofObserver (o : IObserver<_>) : IInObservableProperty<_> =
+        { new IInObservableProperty<'a> with
+            member this.Set(x) = o.OnNext(x)
+            member this.Sink = o }
+
 module Operators =
     /// Creates a new ObservableProperty with a given initial value.
     let inline newOP v = new ObservableProperty<_>(v)
@@ -104,25 +120,38 @@ module Operators =
 
     let inline (<~@~>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
 
+[<Extension>]
+type ObservablePropertyEx =
+    [<Extension>]
+    static member AsProperty(o : IObservable<'a>, initialValue : 'a) =
+        ObservableProperty.ofObservableInit initialValue o
+
+    [<Extension>]
+    static member AsProperty(o : IObservable<'a option>) = ObservableProperty.ofObservableOption o
+
+    [<Extension>]
+    static member AsProperty(o : IObservable<'a>) = ObservableProperty.ofObservable o
+
+    [<Extension>]
+    static member AsProperty(o : IObserver<'a>) = ObservableProperty.ofObserver o
+
+    [<Extension>]
+    static member ObserveWhenValueChanges(p : IOutObservableProperty<'a>) =
+        ObservableProperty.changes p
+
+    [<Extension>]
+    static member ObserveBehavior(p : IOutObservableProperty<'a>) = ObservableProperty.behavior p
+
+    [<Extension>]
+    static member Bind(property, target, selector) =
+        ObservableProperty.bind property selector target
+
+    [<Extension>]
+    static member Sync(property, counterpart, convert, convertBack) =
+        ObservableProperty.sync property convert counterpart convertBack
+
 [<AutoOpen>]
-module Extensions =
+module ObservablePropertyExFSharp =
     type IOutObservableProperty<'a> with
         member property.WhenValueChanges = ObservableProperty.changes property
         member property.Behavior = ObservableProperty.behavior property
-        member property.Bind(target, selector) = ObservableProperty.bind property selector target
-
-    type IInOutObservableProperty<'a> with
-        member property.Sync(counterpart, convert, convertBack) =
-            ObservableProperty.sync property convert counterpart convertBack
-
-    type IObservable<'a> with
-        /// View this observable as an IReadableProperty
-        member observable.AsProperty (initialValue) =
-            new ObservablePropertyFromObservable<'a>(observable, initialValue)
-
-    type IObserver<'a> with
-        /// View this observer as an IWriteableProperty
-        member observer.AsProperty () =
-            { new IInObservableProperty<'a> with
-                member this.Set(x) = observer.OnNext(x)
-                member this.Sink = observer }
