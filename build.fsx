@@ -1,6 +1,5 @@
 // include Fake lib
-#I @"tools/FAKE/tools/"
-#r @"FakeLib.dll"
+#r @"packages/FAKE/tools/FakeLib.dll"
 open System
 
 open Fake
@@ -31,12 +30,12 @@ Target "Build" <| fun _ ->
     |> MSBuild buildDir "Build" ["Configuration", "Release"; "Platform", "AnyCPU"]
     |> Log ("Build-Release" + "-Output: ")
 
-Target "BuildTest" <| fun _ ->
+Target "BuildTests" <| fun _ ->
     testProjects
     |> MSBuildRelease testDir "Build"
     |> Log "TestBuild-Output: "
 
-Target "Test" <| fun _ ->
+Target "RunTests" <| fun _ ->
     !! (testDir + "/*.Test.dll")
     |> xUnit (fun p ->
         { p with
@@ -48,8 +47,12 @@ Target "Test" <| fun _ ->
 
 Target "All" DoNothing
 
-"Clean" ==> "Build" ==> "All"
-"BuildTest" ==> "Test"
+"Clean"
+    ==> "Build"
+    ==> "RunTests"
+    ==> "All"
+
+"BuildTests" ==> "RunTests"
 
 // start build
-RunTargetOrDefault "Build"
+RunTargetOrDefault "All"
