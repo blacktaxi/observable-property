@@ -1,8 +1,14 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.21005.1
 MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{0A2A9907-E7C8-4A25-8130-A9D0A17184AB}"
+ ProjectSection(SolutionItems) = preProject
+		..\paket.dependencies = ..\paket.dependencies
+		..\paket.lock = ..\paket.lock
+	EndProjectSection
+EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ObservableProperty", "ObservableProperty\ObservableProperty.fsproj", "{36179E31-16B3-4E7F-9DAB-0E9CFE013397}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ObservableProperty.Test", "ObservableProperty.Test\ObservableProperty.Test.fsproj", "{A4AA84A4-E5C2-401E-BB9A-531BE9BE433F}"

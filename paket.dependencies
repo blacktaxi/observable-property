@@ -1,0 +1,10 @@
+source http://nuget.org/api/v2
+
+nuget FAKE
+nuget Rx-Core >= 2.2.2
+nuget Rx-Interfaces
+nuget Rx-Linq
+nuget Rx-Main
+nuget Rx-PlatformServices
+nuget xunit 1.9.2
+nuget xunit.runners 1.9.2
