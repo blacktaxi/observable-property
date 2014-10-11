@@ -2,6 +2,7 @@ observable-property
 ===================
 
 [![Build status](https://ci.appveyor.com/api/projects/status/b5egov8pl2202oi1)](https://ci.appveyor.com/project/blacktaxi/observable-property)
+[![Build Status](https://api.travis-ci.org/blacktaxi/observable-property.svg?branch=master)](https://travis-ci.org/blacktaxi/observable-property)
 
 An [Rx.NET](https://github.com/Reactive-Extensions/Rx.NET)-based data binding with first-class bindable properties. 
 
