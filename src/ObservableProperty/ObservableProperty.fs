@@ -51,11 +51,14 @@ type ObservableProperty<'a>(initialValue) =
         member this.Dispose() = this.Dispose()
 
 module ObservableProperty =
-    type ObservablePropertyFromObservable<'a> internal (source : IObservable<'a>, initialValue) =
+    type ObservablePropertyFromObservable<'a>
+        internal (source : IObservable<'a>, initialValue, ?scheduler : IScheduler) =
         let inner = new ObservableProperty<'a>(initialValue)
 
         let subscription =
-            source.ObserveOn(Scheduler.Immediate).Subscribe((inner :> IInObservableProperty<_>).Sink)
+            source
+                .ObserveOn(defaultArg scheduler (Scheduler.Immediate :> _))
+                .Subscribe((inner :> IInObservableProperty<_>).Sink)
 
         let dispose disposing =
             if disposing then
@@ -82,17 +85,32 @@ module ObservableProperty =
             .StartWith(p.Value)
             .DistinctUntilChanged()
 
-    /// Propagate values from an IOutObservableProperty to an IInObservableProperty, using a mapping function.
-    let inline bind (from' : IOutObservableProperty<_>) (mapTo : _ -> _) (to' : IInObservableProperty<_>) : IDisposable =
+    /// Propagate values from an IOutObservableProperty to an IInObservableProperty,
+    /// using a mapping function. The propagation will happen on a given scheduler.
+    let inline bindOn
+        (from' : IOutObservableProperty<_>)
+        (mapTo : _ -> _)
+        (to' : IInObservableProperty<_>)
+        (scheduler : IScheduler) : IDisposable =
         (behavior from')
-            .ObserveOn(Scheduler.Immediate) // is this really the way to go?
+            .ObserveOn(scheduler)
             .Select(mapTo)
             .Subscribe(to'.Sink)
+
+    /// Propagate values from an IOutObservableProperty to an IInObservableProperty, using a
+    /// mapping function.
+    let inline bind
+        (from' : IOutObservableProperty<_>)
+        (mapTo : _ -> _)
+        (to' : IInObservableProperty<_>) : IDisposable =
+        bindOn from' mapTo to' (Scheduler.Default)
 
     /// Synchronize two observable properties. Value changes will propagate both ways through given mapping functions.
     let inline sync a (mapTo : 'a -> 'b) b (mapFrom : 'b -> 'a) : IDisposable =
         // it just magically works!
-        new CompositeDisposable(bind a mapTo b, bind b mapFrom a) :> _
+        new CompositeDisposable(
+            bindOn a mapTo b (Scheduler.Immediate),
+            bindOn b mapFrom a (Scheduler.Immediate)) :> _
 
     /// Create an observable property from an IObservable and an initial value.
     let ofObservableInit initialValue o : IOutObservableProperty<_> =
@@ -128,11 +146,23 @@ module Operators =
     /// Get the current value of an observable property.
     let inline (!!) (p : IOutObservableProperty<'a>) : 'a = ObservableProperty.getValue p
 
-    /// Propagate values from left to right, using a mapping function.
-    let inline ( @~> ) (from', mapTo) to' = ObservableProperty.bind from' mapTo to'
+    /// Propagate values from left to right using a mapping function.
+    let inline ( >~> ) from' to' mapTo = ObservableProperty.bind from' mapTo to'
 
-    /// Propagate values from right to left, using a mapping function.
-    let inline ( <~@ ) to' (from', mapTo) = ObservableProperty.bind from' mapTo to'
+    /// Propagate values from left to right using a mapping function on Scheduler.Immediate.
+    let inline ( >!~> ) from' to' mapTo = ObservableProperty.bindOn from' mapTo to' (Scheduler.Immediate)
+
+    /// Propagate values from left to right using a mapping function on specified scheduler.
+    let inline ( >?~> ) from' to' sched mapTo = ObservableProperty.bindOn from' mapTo to' sched
+
+    /// Propagate values from right to left using a mapping function.
+    let inline ( <~< ) to' from' mapTo = ObservableProperty.bind from' mapTo to'
+
+    /// Propagate values from right to left using a mapping function on Scheduler.Immediate.
+    let inline ( <~!< ) to' from' mapTo = ObservableProperty.bindOn from' mapTo to' (Scheduler.Immediate)
+
+    /// Propagate values from right to left using a mapping function on specified scheduler.
+    let inline ( <~?< ) to' from' sched mapTo = ObservableProperty.bindOn from' mapTo to' sched
 
     /// Synchronize two observable properties. Value changes will propagate both ways through given mapping functions.
     let inline (<~@~>) (a, mapTo) (b, mapFrom) = ObservableProperty.sync a mapTo b mapFrom
@@ -169,6 +199,11 @@ type ObservablePropertyEx =
     /// Propagate values from an IOutObservableProperty to an IInObservableProperty, using a mapping function.
     static member Bind(property, target, selector) =
         ObservableProperty.bind property selector target
+
+    [<Extension>]
+    /// Propagate values from an IOutObservableProperty to an IInObservableProperty, using a mapping function.
+    static member Bind(property, target, selector, scheduler) =
+        ObservableProperty.bindOn property selector target scheduler
 
     [<Extension>]
     /// Synchronize two observable properties. Value changes will propagate both ways through given mapping functions.
