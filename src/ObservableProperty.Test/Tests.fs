@@ -6,6 +6,7 @@ open System
 open System.Reactive
 open System.Reactive.Subjects
 open System.Reactive.Linq
+open System.Reactive.Concurrency
 
 open System.Reactive.Properties
 open System.Reactive.Properties.Operators
@@ -73,7 +74,7 @@ type Tests () =
         let a = newOP 0
         let b = newOP 0
 
-        let binding = (a, id) @~> b
+        let binding = a >!~> b <| id
 
         a <~ 5
         Assert.Equal(5, !!b)
@@ -107,7 +108,7 @@ type Tests () =
         let a = [1; 2; 3; 4].ToObservable()
         let b = newOP 0
 
-        let binding = (a.AsProperty(0), id) @~> b
+        let binding = a.AsProperty(0) >!~> b <| id
 
         Assert.Equal(4, !!b)
 
